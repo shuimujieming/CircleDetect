@@ -4,6 +4,7 @@
 using namespace std;
 using namespace cv;
 
+//获取两点间的像素距离
 double getDistance (Point pointO,Point pointA )
 
 {
@@ -13,8 +14,6 @@ double getDistance (Point pointO,Point pointA )
     distance = powf((pointO.x - pointA.x),2) + powf((pointO.y - pointA.y),2);
 
     distance = sqrtf(distance);
-
-
 
     return distance;
 
@@ -34,6 +33,7 @@ int main() {
 
     Canny(src,canny,10,50);
     imshow("canny",canny);
+    imwrite("../canny.png",canny);
     cvtColor(canny,dst,COLOR_GRAY2BGR);
 
     vector<Vec4f> plines;//保存霍夫变换检测到的直线
@@ -78,6 +78,10 @@ int main() {
     float meter = (50.0 / getDistance(p1,p2));
 
     imshow("plines", dst);
+    imwrite("../plines.png",dst);
+
+    line(image,p1 + Point2f(400,300),p2 + Point2f(400,300),Scalar(0,255,0));
+    putText(image,to_string(50.0),p1 + Point2f(400 + getDistance(p1,p2) / 2.0,300 - 20),FONT_HERSHEY_SIMPLEX,1,Scalar(0,0,0));
 
     waitKey(0);
 
@@ -174,6 +178,12 @@ int main() {
         }
 
     }
+    Point center = Point((circle_max[0]),(circle_max[1]));
+
+    circle(image,center,circle_max[2],Scalar(0,0,255),3,8,0);
+    putText(image,to_string(circle_max[2]*2.0 * meter),center,FONT_HERSHEY_SIMPLEX,1,Scalar(122,255,0));
+
+
 
     int pt_len = circles_rank.size();
     vector<Point2f> pts;
@@ -217,13 +227,16 @@ int main() {
     float y = res.at<float>(1, 0);
     float r = (float)sqrt(x * x + y * y + res.at<float>(2, 0));
 
-    circle(image,Point2f (x,y),r,Scalar(0,255,0),1,8,0);
 
+    center =Point2f (x,y);
+    circle(image,center,r,Scalar(0,0,255),3,8,0);
+    putText(image,to_string(r*2.0*meter),center + Point(-r,-r),FONT_HERSHEY_SIMPLEX,1,Scalar(122,255,0));
 
-    cout<<"x = "<<x<<" y = "<<y<<" r = "<<r*meter<<endl;
 
     resize(image,image,Size(),0.8,0.8);
     imshow("result",image);
+    imwrite("../result.png",image);
+
     waitKey(0);
     return 0;
 }
