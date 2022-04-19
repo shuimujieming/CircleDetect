@@ -26,7 +26,63 @@ int main() {
     cvtColor(image,image_gray,COLOR_BGR2GRAY);
     GaussianBlur(image_gray,image_gray,Size(9,9),2,2);
 
-    //æ£€æµ‹åœ†
+    Mat canny,dst,src;
+    Rect ROI(400,300,500,60);
+    src = imread("../brake.bmp");
+    src = src(ROI);
+    imshow("src",src);
+
+    Canny(src,canny,10,50);
+    imshow("canny",canny);
+    cvtColor(canny,dst,COLOR_GRAY2BGR);
+
+    vector<Vec4f> plines;//±£´æ»ô·ò±ä»»¼ì²âµ½µÄÖ±Ïß
+    HoughLinesP(canny, plines, 1, CV_PI / 180, 2, 10, 3);//ÌáÈ¡±ßÔµÊ±£¬»áÔì³ÉÓĞĞ©µã²»Á¬Ğø£¬ËùÒÔmaxLineGapÉè´óµã
+
+    cout<<plines.size()<<endl;
+
+    float max_x,min_x;
+    int max_x_index,min_x_index;
+
+    max_x = (plines[0][0] + plines[0][3]) / 2.0f;
+    min_x = (plines[0][0] + plines[0][3]) / 2.0f;
+
+    //5. ÏÔÊ¾¼ì²âµ½µÄÖ±Ïß
+    for (size_t i = 0; i < plines.size(); i++)
+    {
+    Vec4f hline = plines[i];
+    if(((hline[0] + hline[2]) / 2.0f ) > max_x)
+    {
+        max_x = (hline[0] + hline[2]) / 2.0f;
+        max_x_index = i;
+    }
+    if(((hline[0] + hline[2]) / 2.0f ) < min_x)
+    {
+        min_x = (hline[0] + hline[2]) / 2.0f;
+        min_x_index = i;
+    }
+    //line(dst, Point(hline[0], hline[1]), Point(hline[2], hline[3]), Scalar(0, 0, 255), 1, LINE_AA);//»æÖÆÖ±Ïß
+    }
+    Vec4f hline = plines[min_x_index];
+
+    line(dst, Point(hline[0], hline[1]), Point(hline[2], hline[3]), Scalar(0, 0, 255), 1, LINE_AA);//»æÖÆÖ±Ïß
+
+    hline = plines[max_x_index];
+
+    line(dst, Point(hline[0], hline[1]), Point(hline[2], hline[3]), Scalar(0, 0, 255), 1, LINE_AA);//»æÖÆÖ±Ïß
+
+    Point2f p1 ((plines[min_x_index][0] + plines[min_x_index][2]) / 2.0f,(plines[min_x_index][1] + plines[min_x_index][3]) / 2.0f);
+    Point2f p2 ((plines[max_x_index][0] + plines[max_x_index][2]) / 2.0f,(plines[max_x_index][1] + plines[max_x_index][3]) / 2.0f);
+
+    //ÏñËØµ±Á¿
+    float meter = (50.0 / getDistance(p1,p2));
+
+    imshow("plines", dst);
+
+    waitKey(0);
+
+
+    //¼ì²âÔ²
     vector<Vec3f> circles;
     double dp = 2;
     double minDist = 10;
@@ -35,22 +91,8 @@ int main() {
     int min_radius = 20;
     int max_radius = 100;
 
+    //hough circle detect
     HoughCircles(image_gray,circles,HOUGH_GRADIENT,dp,minDist,param1,param2,min_radius,max_radius);
-
-    Canny(image_gray, image_gray, 10, 30);
-    imshow("result", image_gray);
-
-    waitKey(0);
-//    vector<Vec4f>plines;
-//    HoughLinesP(image_gray, plines, 1, CV_PI / 180.0, 10, 0, 10);  //ç›´çº¿ä¸è¿ç»­ï¼Œè°ƒæœ€åä¸€ä¸ªå‚æ•°ï¼ˆ10ï¼‰ï¼›
-//    Scalar color = Scalar(0, 0, 255);
-//    for (size_t i = 0; i < plines.size(); i++) {    //size_tç†è§£ä¸ºint
-//        Vec4f hline = plines[i];
-//        line(image, Point(hline[0], hline[1]), Point(hline[2], hline[3]), color, 3, LINE_AA);
-//    }
-
-
-
 
     Vec3f circle_max;
     int maxradius_index = 0;
@@ -64,7 +106,7 @@ int main() {
             radius_max = circle_max[2] = circles[i][2];
         }
     }
-    //å»æ‰æœ€å¤§åœ†
+    //È¥µô×î´óÔ²
     circles.erase(circles.begin() + maxradius_index);
 
     vector<Vec4f> circles_rank(circles.size());
@@ -77,7 +119,7 @@ int main() {
         //cout<< circles_rank[i][3] * (180.0 / 3.14) <<endl;
     }
 
-    /* å†’æ³¡æ’åº */
+    /* Ã°ÅİÅÅĞò */
     {
         for (int i = 0; i < circles.size(); i++)
         {
@@ -94,13 +136,13 @@ int main() {
         }
     }
 
-    //åŠ å…¥æœ€åä¸€ä¸ªå¤§åœ†
+    //¼ÓÈë×îºóÒ»??´óÔ²
 //    circles_rank.resize(circles_rank.size() + 1);
 //    circles_rank.push_back(Vec4f(circle_max[0],circle_max[1],circle_max[2],0));
 
     cout<<circles_rank.size()<<endl;
 
-    //ä¾æ¬¡ç”»åœ†
+    //ÒÀ???»­??
     for (int i = 0; i < circles_rank.size(); ++i) {
         Point center = Point(cvRound(circles_rank[i][0]),cvRound(circles_rank[i][1]));
 
@@ -109,7 +151,7 @@ int main() {
         circle(image,center,3,Scalar(0,255,0),-1,8,0);
         circle(image,center,radius,Scalar(0,0,255),3,8,0);
 
-        float meter = (50.0 / (circles_rank[0][0] - circles_rank[5][0]));
+//        float meter = (50.0 / (circles_rank[0][0] - circles_rank[5][0]));
 
         putText(image,to_string(i+1),center,FONT_HERSHEY_SIMPLEX,3,Scalar(255,0,0));
         putText(image,to_string(radius*2.0 * meter),center + Point(radius,radius),FONT_HERSHEY_SIMPLEX,1,Scalar(122,255,0));
@@ -132,6 +174,53 @@ int main() {
         }
 
     }
+
+    int pt_len = circles_rank.size();
+    vector<Point2f> pts;
+    for (int i = 0; i < circles_rank.size(); ++i) {
+        Point2f p(circles_rank[i][0],circles_rank[i][1]);
+        pts.push_back(p);
+    }
+
+    Mat A(pt_len, 3, CV_32FC1);
+    Mat b(pt_len, 1, CV_32FC1);
+
+// ÏÂÃæµÄÁ½¸ö for Ñ­»·³õÊ¼»¯ A ºÍ b
+    for (int i = 0; i < pt_len; i++)
+    {
+        float *pData = A.ptr<float>(i);
+
+        pData[0] = pts[i].x * 2.0f;
+        pData[1] = pts[i].y * 2.0f;
+
+        pData[2] = 1.0f;
+    }
+
+    float *pb = (float *)b.data;
+
+    for (int i = 0; i < pt_len; i++)
+    {
+        pb[i] = pts[i].x * pts[i].x + pts[i].y * pts[i].y;
+    }
+
+// ÏÂÃæµÄ¼¸ĞĞ´úÂë¾ÍÊÇ½â³¬¶¨·½³ÌµÄ×îĞ¡¶ş³Ë½â
+    Mat A_Trans;
+    transpose(A, A_Trans);
+
+    Mat Inv_A;
+    invert(A_Trans * A, Inv_A);
+
+    Mat res = Inv_A * A_Trans * b;
+
+// È¡³öÔ²ĞÄºÍ°ë¾¶
+    float x = res.at<float>(0, 0);
+    float y = res.at<float>(1, 0);
+    float r = (float)sqrt(x * x + y * y + res.at<float>(2, 0));
+
+    circle(image,Point2f (x,y),r,Scalar(0,255,0),1,8,0);
+
+
+    cout<<"x = "<<x<<" y = "<<y<<" r = "<<r*meter<<endl;
 
     resize(image,image,Size(),0.8,0.8);
     imshow("result",image);
