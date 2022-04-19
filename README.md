@@ -6,4 +6,4 @@
 
 ![plines](C:\Users\shuimujieming\CLionProjects\CircleDetect\plines.png)
 
-![brake](C:\Users\shuimujieming\CLionProjects\CircleDetect\brake.bmp)
+![brake](https://github.com/shuimujieming/CircleDetect/blob/master/brake.bmp)
